@@ -78,5 +78,6 @@ def run_setup(package_name: str, directory: str = "."):
             "Programming Language :: Python :: 3.10",
             "Programming Language :: Python :: 3.11",
             "Programming Language :: Python :: 3.12",
+            "Programming Language :: Python :: 3.13",
         ],
     )
