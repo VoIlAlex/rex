@@ -1,9 +1,9 @@
 # REX | Automatically Update requirements.txt
 
-[![PyPI Release](https://img.shields.io/pypi/v/to-requirements.txt)](https://pypi.org/project/to-requirements.txt/)
-[![Build Status](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml)
+[![PyPI Release](https://img.shields.io/pypi/v/rex)](https://pypi.org/project/rex/)
+[![Build Status](https://github.com/VoIlAlex/rex/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/VoIlAlex/rex/actions/workflows/publish-to-pypi.yml)
 [![Maintainability](https://img.shields.io/maintenance/yes/2025)](https://img.shields.io/maintenance/yes/2025)
-[![License](https://img.shields.io/github/license/VoIlAlex/requirements-txt)](https://github.com/VoIlAlex/requirements-txt/blob/master/LICENSE.md)
+[![License](https://img.shields.io/github/license/VoIlAlex/rex)](https://github.com/VoIlAlex/rex/blob/master/LICENSE.md)
 
 **REX** allows for the automatic management of dependencies in `requirements.txt` using **pip** as a package manager.
 
