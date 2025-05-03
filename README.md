@@ -2,7 +2,7 @@
 
 [![PyPI Release](https://img.shields.io/pypi/v/to-requirements.txt)](https://pypi.org/project/to-requirements.txt/)
 [![Build Status](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml)
-[![Maintainability](https://img.shields.io/maintenance/yes/2024)](https://img.shields.io/maintenance/yes/2024)
+[![Maintainability](https://img.shields.io/maintenance/yes/2025)](https://img.shields.io/maintenance/yes/2025)
 [![License](https://img.shields.io/github/license/VoIlAlex/requirements-txt)](https://github.com/VoIlAlex/requirements-txt/blob/master/LICENSE.md)
 
 **REX** allows for the automatic management of dependencies in `requirements.txt` using **pip** as a package manager.
