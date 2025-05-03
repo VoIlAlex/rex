@@ -1,11 +1,11 @@
-# to-requirements.txt | Automatically Update requirements.txt
+# REX | Automatically Update requirements.txt
 
 [![PyPI Release](https://img.shields.io/pypi/v/to-requirements.txt)](https://pypi.org/project/to-requirements.txt/)
 [![Build Status](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml/badge.svg)](https://github.com/VoIlAlex/requirements-txt/actions/workflows/publish-to-pypi.yml)
 [![Maintainability](https://img.shields.io/maintenance/yes/2024)](https://img.shields.io/maintenance/yes/2024)
 [![License](https://img.shields.io/github/license/VoIlAlex/requirements-txt)](https://github.com/VoIlAlex/requirements-txt/blob/master/LICENSE.md)
 
-**to-requirements.txt** allows for the automatic management of dependencies in `requirements.txt` using **pip** as a package manager.
+**REX** allows for the automatic management of dependencies in `requirements.txt` using **pip** as a package manager.
 
 [![Demo](https://media.giphy.com/media/y9dUiCm2SwaU8qR0eD/giphy.gif)](https://media.giphy.com/media/y9dUiCm2SwaU8qR0eD/giphy.gif)
 
@@ -26,45 +26,46 @@
 To install the package, run the following command:
 
 ```shell
-pip install to-requirements.txt
-```
-
-Then, initialize the package with:
-
-```shell
-requirements-txt install
+pip install rex
 ```
 
 To enable all available functionality, add the following lines to your `.bashrc`, `.zshrc`, or other `.*rc` file:
 
 ```shell
-alias rt=". rt"
-alias requirements-txt=". requirements-txt"
+rex alias
 ```
 
-Or, use the CLI command:
-
+or just paste this lines to your `.bashrc`, `.zshrc`, or other `.*rc` file:
 ```shell
-rt alias
+alias rt=". rt"
+alias requirements-txt=". requirements-txt"
+alias rex=". rex"
 ```
 
 This enables sourced mode of the CLI execution and allows the CLI to activate or deactivate your virtual environment if required.
-
-*Note: The changes made to **pip** scripts will not affect the ordinary *pip* workflow after uninstalling **to-requirements.txt*.**
 
 ### Setup Project
 
 To set up a VirtualEnv-based project, simply type:
 
 ```shell
-requirements-txt init
+rex init
 ```
 
 Or, achieve the same effect more easily with aliases:
 
 ```shell
-rt i
+rex i
 ```
+
+*Note: The changes made to **pip** scripts will not affect the ordinary *pip* workflow after uninstalling **to-requirements.txt*.**
+
+## Aliases
+
+There are a few aliases available to use instead of `rex` command:
+- `requirements-txt` - legacy command.
+- `rt` - legacy command shortened.
+
 
 ## Documentation
 

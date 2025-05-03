@@ -35,9 +35,9 @@ def run_setup(package_name: str, directory: str = "."):
         # Your email
         author_email="ilya.vouk@gmail.com",
         # Either the link to your github or to your website
-        url="https://github.com/VoIlAlex/requirements-txt",
+        url="https://github.com/VoIlAlex/rex",
         # Link from which the project can be downloaded
-        download_url="https://github.com/VoIlAlex/requirements-txt/archive/refs/tags/v1.1.10.zip",
+        download_url="https://github.com/VoIlAlex/rex/archive/refs/tags/v2.0.14.zip",
         # List of keywords
         keywords=[
             "pip",
@@ -59,9 +59,10 @@ def run_setup(package_name: str, directory: str = "."):
             "console_scripts": [
                 "requirements-txt-cli = requirements_txt.commands:cli",
                 "rt-cli = requirements_txt.commands:cli",
+                "rex-cli = requirements_txt.commands:cli",
             ],
         },
-        scripts=["scripts/rt", "scripts/requirements-txt"],
+        scripts=["scripts/rt", "scripts/requirements-txt", "scripts/rex"],
         # https://pypi.org/classifiers/
         classifiers=[
             "Development Status :: 5 - Production/Stable",
