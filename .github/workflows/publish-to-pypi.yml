@@ -27,27 +27,6 @@ jobs:
         run: |
           python -m flake8 requirements_txt --ignore=E501
           python -m black requirements_txt --check
-  test-3-8:
-    needs: lint
-    name: Run tests for 3.8
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@master
-      - name: Set up Python 3.8
-        uses: actions/setup-python@v1
-        with:
-          python-version: 3.8
-      - name: Install requirements.txt
-        run: >-
-          python -m 
-          pip install -r requirements.txt
-      - name: Install requirements.test.txt
-        run: >-
-          python -m 
-          pip install -r requirements.test.txt
-      - name: Run unit tests
-        run: >-
-          python -m pytest tests/unittests
   test-3-9:
     needs: lint
     name: Run tests for 3.9
@@ -133,16 +112,16 @@ jobs:
         run: >-
           python -m pytest tests/unittests
 
-  integration-tests-3-8:
-    needs: test-3-8
-    name: Run integration tests for 3.8
+  test-3-13:
+    needs: lint
+    name: Run tests for 3.13
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@master
-      - name: Set up Python 3.8
+      - name: Set up Python 3.13
         uses: actions/setup-python@v1
         with:
-          python-version: 3.8
+          python-version: 3.13
       - name: Install requirements.txt
         run: >-
           python -m 
@@ -151,9 +130,10 @@ jobs:
         run: >-
           python -m 
           pip install -r requirements.test.txt
-      - name: Run integration tests
+      - name: Run unit tests
         run: >-
-          python -m pytest tests/integrationtests/test_commands
+          python -m pytest tests/unittests
+
   integration-tests-3-9:
     needs: test-3-9
     name: Run integration tests for 3.9
@@ -238,14 +218,35 @@ jobs:
       - name: Run integration tests
         run: >-
           python -m pytest tests/integrationtests/test_commands
+  integration-tests-3-13:
+    needs: test-3-13
+    name: Run integration tests for 3.13
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@master
+      - name: Set up Python 3.13
+        uses: actions/setup-python@v1
+        with:
+          python-version: 3.13
+      - name: Install requirements.txt
+        run: >-
+          python -m 
+          pip install -r requirements.txt
+      - name: Install requirements.test.txt
+        run: >-
+          python -m 
+          pip install -r requirements.test.txt
+      - name: Run integration tests
+        run: >-
+          python -m pytest tests/integrationtests/test_commands
 
   build-n-publish:
     needs:
-      - integration-tests-3-8
       - integration-tests-3-9
       - integration-tests-3-10
       - integration-tests-3-11
       - integration-tests-3-12
+      - integration-tests-3-13
     name: Build and publish Python 🐍 distributions 📦 to PyPI
     runs-on: ubuntu-latest
     steps:
