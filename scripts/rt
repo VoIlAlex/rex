@@ -98,6 +98,12 @@ set_rt_alias_to_file () {
     then
       is_set="1"
     fi
+
+    line_added=$(add_line_to_file_if_no_exists 'alias rex=". rex"' $1)
+    if [ "$line_added" = "1" ]
+    then
+      is_set="1"
+    fi
   fi
   echo $is_set
 }
@@ -155,6 +161,7 @@ else
               echo ""
               echo "alias rt=\". rt\""
               echo "alias requirements-txt=\". requirements-txt\""
+              echo "alias rex=\". rex\""
               echo ""
               echo "Or just run the command below:"
               echo ""

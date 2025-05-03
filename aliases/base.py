@@ -59,9 +59,10 @@ def run_setup(package_name: str, directory: str = "."):
             "console_scripts": [
                 "requirements-txt-cli = requirements_txt.commands:cli",
                 "rt-cli = requirements_txt.commands:cli",
+                "rex-cli = requirements_txt.commands:cli",
             ],
         },
-        scripts=["scripts/rt", "scripts/requirements-txt"],
+        scripts=["scripts/rt", "scripts/requirements-txt", "scripts/rex"],
         # https://pypi.org/classifiers/
         classifiers=[
             "Development Status :: 5 - Production/Stable",
