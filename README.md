@@ -60,6 +60,12 @@ rex i
 
 *Note: The changes made to **pip** scripts will not affect the ordinary *pip* workflow after uninstalling **to-requirements.txt*.**
 
+To restore the original **pip** scripts, run:
+
+```shell
+rex uninstall
+```
+
 ## Aliases
 
 There are a few aliases available to use instead of `rex` command:
