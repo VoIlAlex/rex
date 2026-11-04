@@ -37,7 +37,7 @@ class TestAddInstalledPackagesToRequirementsTxt:
         parse_packages_names_mock.assert_called_once_with(["appdata==1.0.0"])
         get_packages_info_mock.assert_called_once_with(["appdata"])
         check_git_only_restriction_mock.assert_called_once_with()
-        get_requirements_txt_path_mock.assert_called_once_with()
+        get_requirements_txt_path_mock.assert_called_once_with(try_create=True)
         parse_requirements_txt_mock.assert_called_once_with(requirements_txt_path_exp)
 
     def test_add_installed_packages_to_requirements_txt_2(
@@ -86,7 +86,7 @@ class TestAddInstalledPackagesToRequirementsTxt:
         parse_packages_names_mock.assert_called_once_with(["appdata==1.0.0"])
         get_packages_info_mock.assert_called_once_with(["appdata"])
         check_git_only_restriction_mock.assert_called_once_with()
-        get_requirements_txt_path_mock.assert_called_once_with()
+        get_requirements_txt_path_mock.assert_called_once_with(try_create=True)
         parse_requirements_txt_mock.assert_not_called()
 
 
