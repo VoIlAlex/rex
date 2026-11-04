@@ -4,6 +4,8 @@ import re
 from collections import OrderedDict
 from typing import Dict, Iterable, List, Optional, Tuple
 
+from requirements_txt.utils.files import read_text_file
+
 
 def canonicalize_name(name: str) -> str:
     """
@@ -152,19 +154,17 @@ def parse_requirements_txt(path: str) -> OrderedDict:
     :return: mapping of package names to package versions.
     """
     requirements_dict = OrderedDict()
-    with open(path, "r") as f:
-        requirements = f.readlines()
-        for requirement in requirements:
-            requirement = requirement.replace("\n", "").strip()
-            if requirement.startswith("#") or requirement == "":
-                continue
-            requirement_split = requirement.split("==")
-            if len(requirement_split) == 2 and split_requirement(requirement):
-                name, version = (x.strip() for x in requirement_split)
-                requirements_dict[name] = version
-            else:
-                # Unpinned, other specifiers, URLs, options, ...: kept verbatim.
-                requirements_dict[requirement] = None
+    for requirement in read_text_file(path).text.split("\n"):
+        requirement = requirement.strip()
+        if requirement.startswith("#") or requirement == "":
+            continue
+        requirement_split = requirement.split("==")
+        if len(requirement_split) == 2 and split_requirement(requirement):
+            name, version = (x.strip() for x in requirement_split)
+            requirements_dict[name] = version
+        else:
+            # Unpinned, other specifiers, URLs, options, ...: kept verbatim.
+            requirements_dict[requirement] = None
     return requirements_dict
 
 
