@@ -4,7 +4,10 @@ from collections import OrderedDict
 from typing import Iterable, List
 from requirements_txt.utils.pip.parsers import (
     canonicalize_name,
+    get_requirement_key,
+    is_direct_reference,
     parse_packages_names,
+    split_requirement,
     get_packages_info,
     parse_requirements_txt,
 )
@@ -12,6 +15,11 @@ from requirements_txt.utils.pip.restrictions import (
     check_git_only_restriction,
     get_requirements_txt_path,
 )
+
+
+def _format_requirement(key: str, version) -> str:
+    # Lines without a pinned version (`flask`, `foo>=1.0`) are kept verbatim.
+    return f"{key}=={version}\n" if version else f"{key}\n"
 
 
 def is_package_folder(path: str) -> bool:
@@ -29,8 +37,11 @@ def cluster_package_names(package_names: List[str]):
     for package_name in package_names:
         if package_name.startswith("git+"):
             git_packages.append(package_name)
-        elif package_name.startswith(".") or is_package_folder(package_name):
+        elif package_name.startswith((".", "/")) or is_package_folder(package_name):
             file_system_packages.append(package_name)
+        elif is_direct_reference(package_name):
+            # `name @ url`, archive URLs: written as is, like git packages.
+            git_packages.append(package_name)
         else:
             pypi_packages.append(package_name)
 
@@ -41,6 +52,27 @@ def cluster_package_names(package_names: List[str]):
     )
 
 
+def _set_requirement(requirements_dict: OrderedDict, key: str, version):
+    """
+    Set a requirement, replacing an existing line for the same project in place.
+
+    `requests`, `Requests>=2` and `requests[socks]==1.0` all refer to the
+    same project, so installing one of them must not add a duplicate line.
+    """
+    project = get_requirement_key(key)
+    for existing_key in list(requirements_dict.keys()):
+        if project is not None and get_requirement_key(existing_key) == project:
+            items = [
+                (key, version) if k == existing_key else (k, v)
+                for k, v in requirements_dict.items()
+                if k == existing_key or get_requirement_key(k) != project
+            ]
+            requirements_dict.clear()
+            requirements_dict.update(items)
+            return
+    requirements_dict[key] = version
+
+
 def add_installed_packages_to_requirements_txt(args: Iterable):
     """
     Add installed packages to requirements.txt or update their versions.
@@ -49,7 +81,14 @@ def add_installed_packages_to_requirements_txt(args: Iterable):
     """
     args_packages_names = parse_packages_names(args)
     clustered_packages_names = cluster_package_names(args_packages_names)
-    packages = get_packages_info(clustered_packages_names["pypi_packages"])
+    # `requests[socks]` is looked up as `requests`; extras are written back.
+    extras = {}
+    pypi_names = []
+    for spec in clustered_packages_names["pypi_packages"]:
+        name, spec_extras = split_requirement(spec) or (spec, "")
+        extras[canonicalize_name(name)] = spec_extras
+        pypi_names.append(name)
+    packages = get_packages_info(pypi_names)
 
     if not check_git_only_restriction():
         logging.warning("Cannot write to requirements.txt. git_only flag is set.")
@@ -71,11 +110,12 @@ def add_installed_packages_to_requirements_txt(args: Iterable):
 
     packages_without_version = []
     for package_name, package_version in packages.items():
+        key = package_name + extras.get(canonicalize_name(package_name), "")
         if not package_version:
             if package_name not in requirements_dict:
-                packages_without_version.append(package_name)
+                packages_without_version.append(key)
         else:
-            requirements_dict[package_name] = package_version
+            _set_requirement(requirements_dict, key, package_version)
     for package_name in clustered_packages_names["git_packages"]:
         requirements_dict[package_name] = None
     for package_name in clustered_packages_names["file_system_packages"]:
@@ -88,7 +128,7 @@ def add_installed_packages_to_requirements_txt(args: Iterable):
             f"{package_name}\n" for package_name in packages_without_version
         ]
         lines_to_write += [
-            f"{package_name}=={requirements_dict[package_name]}\n"
+            _format_requirement(package_name, requirements_dict[package_name])
             for package_name in clustered_packages_names["pypi_packages"]
         ]
         lines_to_write += [
@@ -108,7 +148,7 @@ def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
 
     :param args: arguments of `pip install`.
     """
-    args_packages_names = parse_packages_names(args)
+    args_packages_names = parse_packages_names(args, command="uninstall")
     packages = get_packages_info(args_packages_names)
 
     if not check_git_only_restriction():
@@ -126,7 +166,7 @@ def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
     }
     requirements_dict = parse_requirements_txt(requirements_txt_path)
     for package_name in list(requirements_dict.keys()):
-        if canonicalize_name(package_name) in uninstalled:
+        if get_requirement_key(package_name) in uninstalled:
             del requirements_dict[package_name]
 
     clustered_packages_names = cluster_package_names(list(requirements_dict.keys()))
@@ -134,7 +174,7 @@ def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
     with open(requirements_txt_path, "w+") as f:
         lines_to_write = []
         lines_to_write += [
-            f"{package_name}=={requirements_dict[package_name]}\n"
+            _format_requirement(package_name, requirements_dict[package_name])
             for package_name in clustered_packages_names["pypi_packages"]
         ]
         lines_to_write += [

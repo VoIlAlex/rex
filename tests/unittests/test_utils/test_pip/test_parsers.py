@@ -1,10 +1,14 @@
 import os.path
+
+import pytest
 from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
 from requirements_txt.utils.pip.parsers import (
     canonicalize_name,
     get_packages_info,
+    get_requirement_key,
+    split_requirement,
     parse_packages_names,
     parse_requirements_txt,
 )
@@ -62,8 +66,8 @@ class TestParsePackagesNames:
     def test_parse_packages_names_1(self):
         args = ["appdata==1.0.0", "-r", "requirements.txt"]
         packages_names = parse_packages_names(args)
-        # requirements.txt will be filtered while searching installed package
-        assert packages_names == ["appdata", "requirements.txt"]
+        # The value of `-r` is not a package.
+        assert packages_names == ["appdata"]
 
     def test_parse_packages_names_2(self):
         args = ["."]
@@ -78,7 +82,69 @@ class TestParsePackagesNames:
         assert packages_names == ["appdata", "other_module", "another"]
 
 
+class TestParsePackagesNamesPipOptions:
+    @pytest.mark.parametrize(
+        "args, expected",
+        [
+            # Options with values (#4): the value is not a package.
+            (["-i", "https://example.org/simple", "appdata"], ["appdata"]),
+            (["--index-url=https://example.org/simple", "appdata"], ["appdata"]),
+            (["--proxy", "host:3128", "-c", "constraints.txt", "a"], ["a"]),
+            (["--no-deps", "-U", "appdata", "--target", "/tmp/x"], ["appdata"]),
+            # Extras (#10) are kept, version specifiers are dropped.
+            (["requests[socks]"], ["requests[socks]"]),
+            (["requests[socks, security]>=2.0"], ["requests[socks,security]"]),
+            (["Django>=4,<5"], ["Django"]),
+            (["zope.interface~=5.0"], ["zope.interface"]),
+            # Editables and direct references are returned as is.
+            (["-e", "./local_pkg"], ["./local_pkg"]),
+            (["-e", "."], []),
+            (["git+https://github.com/a/b.git"], ["git+https://github.com/a/b.git"]),
+            (["name @ https://x/y.whl"], ["name @ https://x/y.whl"]),
+        ],
+    )
+    def test_install(self, args, expected):
+        assert parse_packages_names(args) == expected
+
+    def test_uninstall(self):
+        args = ["-y", "--root-user-action", "ignore", "PyYAML"]
+        assert parse_packages_names(args, command="uninstall") == ["PyYAML"]
+
+
+class TestSplitRequirement:
+    @pytest.mark.parametrize(
+        "spec, expected",
+        [
+            ("requests", ("requests", "")),
+            ("requests[socks]==2.0", ("requests", "[socks]")),
+            ("requests [ socks , b ] >= 2", ("requests", "[socks,b]")),
+            ("foo; python_version < '3.9'", ("foo", "")),
+            ("git+https://github.com/a/b.git", None),
+            ("./local", None),
+            ("name @ https://x/y.whl", None),
+            ("-r other.txt", None),
+        ],
+    )
+    def test_split_requirement(self, spec, expected):
+        assert split_requirement(spec) == expected
+
+    def test_get_requirement_key(self):
+        assert get_requirement_key("Requests[socks]>=2") == "requests"
+        assert get_requirement_key("./local") is None
+
+
 class TestParseRequirementsTxt:
+    def test_parse_requirements_txt_keeps_unpinned_lines_verbatim(self, temp_dir: str):
+        requirements_txt_path = os.path.join(temp_dir, "requirements.txt-temp")
+        with open(requirements_txt_path, "w+") as f:
+            f.writelines(["foo>=1.0\n", "bar[x]==2.0\n", "--index-url https://x\n"])
+        requirements_txt_data = parse_requirements_txt(requirements_txt_path)
+        assert dict(requirements_txt_data) == {
+            "foo>=1.0": None,
+            "bar[x]": "2.0",
+            "--index-url https://x": None,
+        }
+
     def test_parse_requirements_txt_1(self, temp_dir: str):
         requirements_txt_path = os.path.join(temp_dir, "requirements.txt-temp")
         with open(requirements_txt_path, "w+") as f:
