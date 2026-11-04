@@ -3,6 +3,7 @@ import os.path
 from collections import OrderedDict
 from typing import Iterable, List
 from requirements_txt.utils.pip.parsers import (
+    canonicalize_name,
     parse_packages_names,
     get_packages_info,
     parse_requirements_txt,
@@ -120,9 +121,12 @@ def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
         logging.warning("requirements.txt not found")
         return
 
+    uninstalled = {canonicalize_name(name) for name in args_packages_names} - {
+        canonicalize_name(name) for name in packages
+    }
     requirements_dict = parse_requirements_txt(requirements_txt_path)
     for package_name in list(requirements_dict.keys()):
-        if package_name in args_packages_names and package_name not in packages:
+        if canonicalize_name(package_name) in uninstalled:
             del requirements_dict[package_name]
 
     clustered_packages_names = cluster_package_names(list(requirements_dict.keys()))

@@ -3,47 +3,59 @@ from types import SimpleNamespace
 from unittest.mock import patch, Mock
 
 from requirements_txt.utils.pip.parsers import (
-    get_package_name,
-    get_package_version,
+    canonicalize_name,
     get_packages_info,
     parse_packages_names,
     parse_requirements_txt,
 )
 
 
-class TestGetPackageName:
-    def test_get_package_name_obj(self):
-        package_name = get_package_name(SimpleNamespace(name="some-name"))
-        assert package_name == "some-name"
-
-    def test_get_package_name_dict(self):
-        package_name = get_package_name({"name": "some-name"})
-        assert package_name == "some-name"
+class TestCanonicalizeName:
+    def test_canonicalize_name(self):
+        assert canonicalize_name("PyYAML") == "pyyaml"
+        assert canonicalize_name("zope.interface") == "zope-interface"
+        assert canonicalize_name("Foo__Bar-.baz") == "foo-bar-baz"
 
 
-class TestGetPackageVersion:
-    def test_get_package_version_obj(self):
-        package_version = get_package_version(SimpleNamespace(version="1.0.0"))
-        assert package_version == "1.0.0"
-
-    def test_get_package_version_dict(self):
-        package_version = get_package_version({"version": "1.0.0"})
-        assert package_version == "1.0.0"
+def _distribution(name: str, version: str) -> SimpleNamespace:
+    return SimpleNamespace(metadata={"Name": name}, version=version)
 
 
 class TestGetPackagesInfo:
-    @patch("requirements_txt.utils.pip.parsers.search_packages_info")
-    @patch("requirements_txt.utils.pip.parsers._initialize_master_working_set")
-    def test_get_packages_info_1(
-        self, init_pip_mock: Mock, search_packages_info_mock: Mock
-    ):
-        search_packages_info_mock.return_value = [
-            SimpleNamespace(name="appdata", version="1.0.0")
-        ]
+    @patch("requirements_txt.utils.pip.parsers.importlib.metadata.distributions")
+    def test_get_packages_info_1(self, distributions_mock: Mock):
+        distributions_mock.return_value = [_distribution("appdata", "1.0.0")]
         packages_info = get_packages_info(["appdata"])
-        init_pip_mock.assert_called_once_with()
-        assert len(packages_info) == 1
-        assert packages_info["appdata"] == "1.0.0"
+        assert packages_info == {"appdata": "1.0.0"}
+
+    @patch("requirements_txt.utils.pip.parsers.importlib.metadata.distributions")
+    def test_get_packages_info_name_normalization(self, distributions_mock: Mock):
+        # The metadata name is reported, whatever spelling was requested.
+        distributions_mock.return_value = [_distribution("PyYAML", "6.0")]
+        packages_info = get_packages_info(["pyyaml"])
+        assert packages_info == {"PyYAML": "6.0"}
+
+    @patch("requirements_txt.utils.pip.parsers.importlib.metadata.distributions")
+    def test_get_packages_info_missing_and_order(self, distributions_mock: Mock):
+        distributions_mock.return_value = [
+            _distribution("b", "2.0"),
+            _distribution("a", "1.0"),
+        ]
+        packages_info = get_packages_info(["a", "missing", "b"])
+        assert list(packages_info.items()) == [("a", "1.0"), ("b", "2.0")]
+
+    @patch("requirements_txt.utils.pip.parsers.importlib.metadata.distributions")
+    def test_get_packages_info_first_match_wins(self, distributions_mock: Mock):
+        distributions_mock.return_value = [
+            _distribution("appdata", "2.0"),
+            _distribution("appdata", "1.0"),
+        ]
+        assert get_packages_info(["appdata"]) == {"appdata": "2.0"}
+
+    def test_get_packages_info_real_environment(self):
+        # pytest is installed in the test environment.
+        packages_info = get_packages_info(["PYTEST", "surely-not-installed-xyz"])
+        assert list(packages_info) == ["pytest"]
 
 
 class TestParsePackagesNames:
