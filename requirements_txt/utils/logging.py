@@ -1,9 +1,11 @@
 import logging
+import os
 import sys
+from typing import Optional
 
 from colored import attr, fg
 
-from requirements_txt.utils.consts import ALL_DONE
+from requirements_txt.utils.consts import ALL_DONE_TITLE
 
 logger = logging.getLogger("requirements-txt")
 logger.setLevel(logging.INFO)
@@ -27,26 +29,48 @@ def set_verbose(verbose: bool = False):
         logger_handler.terminator = ""
 
 
-def show_all_done_message():
-    """
-    Print ALL_DONE message to the screen.
-    """
-    message = ALL_DONE
-    final_message = ""
-    for line in message.split("\n"):
-        if line == "":
-            final_message += "\n"
-        else:
-            final_message += f'{fg(15)}{line}{attr(1)}{attr("reset")}\n'
+def _use_colors() -> bool:
+    # https://no-color.org; also no escape codes when output is piped.
+    return not os.environ.get("NO_COLOR") and sys.stdout.isatty()
 
-    final_message = final_message.replace(
-        "The virtualenv project setup is complete.",
-        f"{fg(129)}The virtualenv project setup is complete.{fg(15)}",
-    )
-    final_message = final_message.replace(
-        "Happy codding!", f"{fg(129)}Happy codding!{fg(15)}"
-    )
-    print(final_message)
+
+def _style(text: str, *styles: str) -> str:
+    if not _use_colors():
+        return text
+    return "".join(styles) + text + attr("reset")
+
+
+def show_all_done_message(venv_path: Optional[str] = None):
+    """
+    Print the summary shown at the end of `rex init`.
+
+    :param venv_path: path to the virtual environment that was set up.
+    """
+    venv_path = os.path.relpath(venv_path) if venv_path else "venv"
+    activate_path = os.path.join(venv_path, "bin", "activate")
+    # Set by the `rex` shell script when it runs in sourced mode (`. rex i`),
+    # in which case it activates the environment itself.
+    sourced = os.environ.get("REX_SOURCED") == "1"
+
+    lines = [
+        "",
+        _style(f"✔ {ALL_DONE_TITLE}", fg("green"), attr("bold")),
+        "",
+        f"  Virtual environment  {venv_path}",
+        "  Requirements file    requirements.txt",
+        "",
+        _style("  Next steps", attr("bold")),
+    ]
+    if sourced:
+        lines.append("    The virtual environment is activated.")
+    else:
+        lines.append(f"    {_style('source ' + activate_path, fg('cyan'))}")
+    lines += [
+        f"    {_style('pip install <package>', fg('cyan'))}"
+        "    requirements.txt is updated automatically",
+        "",
+    ]
+    print("\n".join(lines))
 
 
 __all__ = [
