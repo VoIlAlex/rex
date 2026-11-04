@@ -136,7 +136,7 @@ then
 else
   # Run internal python cli
 
-  python3 -m requirements_txt $@
+  REX_SOURCED=$sourced python3 -m requirements_txt $@
 
 
   # Activate virtual environment

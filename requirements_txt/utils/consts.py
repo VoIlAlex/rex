@@ -1,11 +1,1 @@
-ALL_DONE = """
-||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-|||                                                      |||
-|||    All done!                                         |||
-|||                                                      |||
-|||    The virtualenv project setup is complete.         |||
-|||    Happy codding!                                    |||
-|||                                                      |||
-|||                                                      |||
-||||||||||||||||||||||||||||||||||||||||||||||||||||||||||||
-"""
+ALL_DONE_TITLE = "All done! Your virtualenv project is ready."

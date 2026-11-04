@@ -64,7 +64,7 @@ def init_virtual_env(verbose: bool = False):
     logger.info("Setting up to-requirements.txt...")
     install_for_venv()
     logger.info(" Done.\n")
-    show_all_done_message()
+    show_all_done_message(venv_path)
 
 
 def install_for_venv():
