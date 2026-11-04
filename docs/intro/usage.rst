@@ -91,6 +91,18 @@ To override your pip scripts and enable requirements.txt synchronization use:
 
 This command is not required if use set up your environment with init command.
 
+Skipping packages
+~~~~~~~~~~~~~~~~~
+
+To install or uninstall packages without updating requirements.txt, e.g. for
+development tools you do not want to ship, pass ``--no-save`` to pip:
+
+.. code-block::
+
+    pip install --no-save ipython
+
+The option is handled by to-requirements.txt and is not passed to pip.
+
 Help
 ---------------
 
