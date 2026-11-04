@@ -91,6 +91,19 @@ To override your pip scripts and enable requirements.txt synchronization use:
 
 This command is not required if use set up your environment with init command.
 
+Uninstall
+---------------
+
+To restore your pip scripts to their original state and stop
+requirements.txt synchronization use:
+
+.. code-block::
+
+    rt uninstall
+
+Run it before ``pip uninstall rex`` (or with the virtual environment
+activated, for a project set up with ``rt init``).
+
 Help
 ---------------
 

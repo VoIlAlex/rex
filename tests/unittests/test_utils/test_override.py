@@ -23,3 +23,28 @@ class TestOverridePip:
         mock_open.return_value.__enter__.return_value.write.assert_called_once_with(
             mock_open.return_value.__enter__.return_value.read.return_value.format.return_value
         )
+
+
+class TestRestorePip:
+    def test_not_patched_is_left_alone(self, tmp_path):
+        from requirements_txt.utils.override import restore_pip
+
+        path = tmp_path / "pip"
+        path.write_text("#!/usr/bin/python3\nstock\n")
+        assert restore_pip(str(path)) is False
+        assert path.read_text() == "#!/usr/bin/python3\nstock\n"
+
+    def test_shebang_python_is_kept(self, tmp_path):
+        from requirements_txt.utils.override import (
+            get_shebang_python,
+            is_patched,
+            override_pip as real_override_pip,
+            restore_pip,
+        )
+
+        path = str(tmp_path / "pip")
+        real_override_pip(path, "/venv/bin/python")
+        assert is_patched(path)
+        assert restore_pip(path) is True
+        assert not is_patched(path)
+        assert get_shebang_python(path) == "/venv/bin/python"
