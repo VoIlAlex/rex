@@ -91,6 +91,16 @@ To override your pip scripts and enable requirements.txt synchronization use:
 
 This command is not required if use set up your environment with init command.
 
+Upgrading pip
+~~~~~~~~~~~~~~~
+
+Upgrading pip reinstalls its scripts and would remove the synchronization.
+When pip is upgraded through a patched script (e.g. ``pip install -U pip``),
+the patch is re-applied automatically.
+
+If pip is upgraded in another way, e.g. ``python -m pip install -U pip``,
+run ``rt install`` again afterwards.
+
 Help
 ---------------
 
