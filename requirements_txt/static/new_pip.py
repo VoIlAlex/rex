@@ -40,11 +40,28 @@ try:
 except Exception:
     ...
 
+# Options handled by REX itself; removed before pip parses the arguments.
+REX_NO_SAVE = "--no-save"
+REX_HELP = """
+REX Options:
+  --no-save                   Do not update requirements.txt for this command.
+"""
+
 if __name__ == "__main__":
     command, args = parse_command(sys.argv[1:])
+    no_save = False
+    if command in ("install", "uninstall"):
+        no_save = REX_NO_SAVE in args
+        sys.argv = [sys.argv[0]] + [x for x in sys.argv[1:] if x != REX_NO_SAVE]
+        args = [x for x in args if x != REX_NO_SAVE]
+        if requirements_handler and ("-h" in args or "--help" in args):
+            # pip prints its help and exits; append REX's options after it.
+            import atexit
+
+            atexit.register(lambda: sys.stdout.write(REX_HELP))
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
     res = main()
-    if requirements_handler and res == 0:
+    if requirements_handler and res == 0 and not no_save:
         disable = get_config_value("disable")
         if not disable:
             if command == "install" and "-r" not in args:
