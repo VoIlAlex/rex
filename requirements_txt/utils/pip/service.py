@@ -54,7 +54,7 @@ def add_installed_packages_to_requirements_txt(args: Iterable):
         logging.warning("Cannot write to requirements.txt. git_only flag is set.")
         return
 
-    requirements_txt_path, created = get_requirements_txt_path()
+    requirements_txt_path, created = get_requirements_txt_path(try_create=True)
 
     if requirements_txt_path is None and not created:
         logging.warning(
