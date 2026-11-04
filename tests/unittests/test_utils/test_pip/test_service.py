@@ -124,7 +124,9 @@ class TestRemoveUninstalledPackagesFromRequirementsTxt:
         with open(requirements_txt_path_exp, "r") as f:
             assert f.read() == "appdata==0.2.1\nother==2.1.5\n"
 
-        parse_packages_names_mock.assert_called_once_with(["something"])
+        parse_packages_names_mock.assert_called_once_with(
+            ["something"], command="uninstall"
+        )
         get_packages_info_mock.assert_called_once_with(["something"])
         check_git_only_restriction_mock.assert_called_once_with()
         get_requirements_txt_path_mock.assert_called_once_with(try_create=False)
@@ -145,7 +147,9 @@ class TestRemoveUninstalledPackagesFromRequirementsTxt:
 
         remove_uninstalled_packages_from_requirements_txt(["something"])
 
-        parse_packages_names_mock.assert_called_once_with(["something"])
+        parse_packages_names_mock.assert_called_once_with(
+            ["something"], command="uninstall"
+        )
         get_packages_info_mock.assert_called_once_with(["something"])
         check_git_only_restriction_mock.assert_called_once_with()
         get_requirements_txt_path_mock.assert_not_called()
@@ -167,7 +171,9 @@ class TestRemoveUninstalledPackagesFromRequirementsTxt:
 
         remove_uninstalled_packages_from_requirements_txt(["something"])
 
-        parse_packages_names_mock.assert_called_once_with(["something"])
+        parse_packages_names_mock.assert_called_once_with(
+            ["something"], command="uninstall"
+        )
         get_packages_info_mock.assert_called_once_with(["something"])
         check_git_only_restriction_mock.assert_called_once_with()
         get_requirements_txt_path_mock.assert_called_once_with(try_create=False)
@@ -197,3 +203,67 @@ class TestRemoveUninstalledPackagesFromRequirementsTxt:
 
         with open(requirements_txt_path_exp, "r") as f:
             assert f.read() == "appdata==0.2.1\n"
+
+
+@patch("requirements_txt.utils.pip.service.get_packages_info")
+@patch("requirements_txt.utils.pip.service.check_git_only_restriction")
+class TestRequirementsTxtRoundTrip:
+    def _install(self, args, installed, get_packages_info_mock, git_mock, content):
+        git_mock.return_value = True
+        get_packages_info_mock.return_value = installed
+        with open("requirements.txt", "w") as f:
+            f.write(content)
+        add_installed_packages_to_requirements_txt(args)
+        with open("requirements.txt") as f:
+            return f.read()
+
+    def test_unpinned_lines_are_not_corrupted(
+        self, git_mock: Mock, get_packages_info_mock: Mock, temp_dir
+    ):
+        # Previously rewritten as `flask==None` and `foo>=1.0==None`.
+        result = self._install(
+            ["appdata"],
+            {"appdata": "2.2.1"},
+            get_packages_info_mock,
+            git_mock,
+            "flask\nfoo>=1.0\n",
+        )
+        assert result == "flask\nfoo>=1.0\nappdata==2.2.1\n"
+
+    def test_extras_are_written(
+        self, git_mock: Mock, get_packages_info_mock: Mock, temp_dir
+    ):
+        result = self._install(
+            ["requests[socks]>=2"],
+            {"requests": "2.31.0"},
+            get_packages_info_mock,
+            git_mock,
+            "",
+        )
+        get_packages_info_mock.assert_called_once_with(["requests"])
+        assert result == "requests[socks]==2.31.0\n"
+
+    def test_existing_line_for_same_project_is_replaced_in_place(
+        self, git_mock: Mock, get_packages_info_mock: Mock, temp_dir
+    ):
+        result = self._install(
+            ["requests"],
+            {"requests": "2.31.0"},
+            get_packages_info_mock,
+            git_mock,
+            "appdata==2.2.1\nRequests>=2.0\nclick==8.0.3\n",
+        )
+        assert result == "appdata==2.2.1\nrequests==2.31.0\nclick==8.0.3\n"
+
+    def test_option_values_are_not_written(
+        self, git_mock: Mock, get_packages_info_mock: Mock, temp_dir
+    ):
+        result = self._install(
+            ["-i", "https://example.org/simple", "appdata"],
+            {"appdata": "2.2.1"},
+            get_packages_info_mock,
+            git_mock,
+            "",
+        )
+        get_packages_info_mock.assert_called_once_with(["appdata"])
+        assert result == "appdata==2.2.1\n"
