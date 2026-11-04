@@ -1,5 +1,6 @@
 #!{python_path}
 # -*- coding: utf-8 -*-
+import os
 import re
 import sys
 
@@ -15,6 +16,10 @@ try:
         remove_uninstalled_packages_from_requirements_txt,
     )
     from requirements_txt.utils.config import get_config_value
+    from requirements_txt.utils.pip.selfupdate import (
+        is_pip_self_install,
+        repatch_pip_scripts,
+    )
 
     try:
         from requirements_txt import __version__
@@ -45,6 +50,15 @@ if __name__ == "__main__":
     sys.argv[0] = re.sub(r"(-script\.pyw|\.exe)?$", "", sys.argv[0])
     res = main()
     if requirements_handler and res == 0:
+        if command == "install" and is_pip_self_install(args):
+            # Upgrading pip replaces its scripts, including this one.
+            bin_dir = os.path.dirname(os.path.abspath(sys.argv[0]))
+            repatched = repatch_pip_scripts(bin_dir, sys.executable)
+            if repatched:
+                sys.stdout.write(
+                    "rex: pip was reinstalled; restored requirements.txt "
+                    "synchronization for: %s\n" % ", ".join(repatched)
+                )
         disable = get_config_value("disable")
         if not disable:
             if command == "install" and "-r" not in args:
