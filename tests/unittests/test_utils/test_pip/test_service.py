@@ -267,3 +267,22 @@ class TestRequirementsTxtRoundTrip:
         )
         get_packages_info_mock.assert_called_once_with(["appdata"])
         assert result == "appdata==2.2.1\n"
+
+
+@patch("requirements_txt.utils.pip.service.get_packages_info")
+@patch("requirements_txt.utils.pip.service.check_git_only_restriction")
+class TestRequirementsTxtEncoding:
+    def test_utf_16_crlf_file_is_updated_in_place(
+        self, git_mock: Mock, get_packages_info_mock: Mock, temp_dir
+    ):
+        # `pip freeze > requirements.txt` in Windows PowerShell (#32).
+        git_mock.return_value = True
+        get_packages_info_mock.return_value = {"appdata": "2.2.1"}
+        with open("requirements.txt", "wb") as f:
+            f.write("click==8.0.3\r\n".encode("utf-16"))
+
+        add_installed_packages_to_requirements_txt(["appdata"])
+
+        with open("requirements.txt", "rb") as f:
+            data = f.read()
+        assert data.decode("utf-16") == "click==8.0.3\r\nappdata==2.2.1\r\n"

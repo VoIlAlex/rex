@@ -2,6 +2,11 @@ import logging
 import os.path
 from collections import OrderedDict
 from typing import Iterable, List
+from requirements_txt.utils.files import (
+    DEFAULT_ENCODING,
+    read_text_file,
+    write_text_file,
+)
 from requirements_txt.utils.pip.parsers import (
     canonicalize_name,
     get_requirement_key,
@@ -20,6 +25,16 @@ from requirements_txt.utils.pip.restrictions import (
 def _format_requirement(key: str, version) -> str:
     # Lines without a pinned version (`flask`, `foo>=1.0`) are kept verbatim.
     return f"{key}=={version}\n" if version else f"{key}\n"
+
+
+def _write_requirements_txt(path: str, lines: List[str]):
+    """
+    Write requirements.txt, keeping the encoding and line endings it had.
+    """
+    encoding, newline = DEFAULT_ENCODING, "\n"
+    if os.path.exists(path) and os.path.getsize(path) > 0:
+        _, encoding, newline = read_text_file(path)
+    write_text_file(path, "".join(lines), encoding=encoding, newline=newline)
 
 
 def is_package_folder(path: str) -> bool:
@@ -122,24 +137,20 @@ def add_installed_packages_to_requirements_txt(args: Iterable):
         requirements_dict[package_name] = None
 
     clustered_packages_names = cluster_package_names(list(requirements_dict.keys()))
-    with open(requirements_txt_path, "w+") as f:
-        lines_to_write = []
-        lines_to_write += [
-            f"{package_name}\n" for package_name in packages_without_version
-        ]
-        lines_to_write += [
-            _format_requirement(package_name, requirements_dict[package_name])
-            for package_name in clustered_packages_names["pypi_packages"]
-        ]
-        lines_to_write += [
-            f"{package_name}\n"
-            for package_name in clustered_packages_names["git_packages"]
-        ]
-        lines_to_write += [
-            f"{package_name}\n"
-            for package_name in clustered_packages_names["file_system_packages"]
-        ]
-        f.writelines(lines_to_write)
+    lines_to_write = []
+    lines_to_write += [f"{package_name}\n" for package_name in packages_without_version]
+    lines_to_write += [
+        _format_requirement(package_name, requirements_dict[package_name])
+        for package_name in clustered_packages_names["pypi_packages"]
+    ]
+    lines_to_write += [
+        f"{package_name}\n" for package_name in clustered_packages_names["git_packages"]
+    ]
+    lines_to_write += [
+        f"{package_name}\n"
+        for package_name in clustered_packages_names["file_system_packages"]
+    ]
+    _write_requirements_txt(requirements_txt_path, lines_to_write)
 
 
 def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
@@ -171,21 +182,19 @@ def remove_uninstalled_packages_from_requirements_txt(args: Iterable):
 
     clustered_packages_names = cluster_package_names(list(requirements_dict.keys()))
 
-    with open(requirements_txt_path, "w+") as f:
-        lines_to_write = []
-        lines_to_write += [
-            _format_requirement(package_name, requirements_dict[package_name])
-            for package_name in clustered_packages_names["pypi_packages"]
-        ]
-        lines_to_write += [
-            f"{package_name}\n"
-            for package_name in clustered_packages_names["git_packages"]
-        ]
-        lines_to_write += [
-            f"{package_name}\n"
-            for package_name in clustered_packages_names["file_system_packages"]
-        ]
-        f.writelines(lines_to_write)
+    lines_to_write = []
+    lines_to_write += [
+        _format_requirement(package_name, requirements_dict[package_name])
+        for package_name in clustered_packages_names["pypi_packages"]
+    ]
+    lines_to_write += [
+        f"{package_name}\n" for package_name in clustered_packages_names["git_packages"]
+    ]
+    lines_to_write += [
+        f"{package_name}\n"
+        for package_name in clustered_packages_names["file_system_packages"]
+    ]
+    _write_requirements_txt(requirements_txt_path, lines_to_write)
 
 
 __all__ = [
