@@ -1,56 +1,51 @@
-import logging
+import importlib
+import importlib.metadata
+import re
 from collections import OrderedDict
-from typing import Iterable, List, Dict, Union
-
-from pip._internal.commands.show import (
-    search_packages_info,
-    _PackageInfo,
-    logger as pip_logger,
-)
-from pip._vendor.pkg_resources import _initialize_master_working_set
+from typing import Dict, Iterable, List
 
 
-def get_package_name(package_info: Union[dict, _PackageInfo]) -> str:
+def canonicalize_name(name: str) -> str:
     """
-    Get package name for package info.
+    Normalize a distribution name as described in PEP 503.
 
-    :param package_info: package info to get package name from.
-    :return: package name.
+    :param name: distribution name.
+    :return: normalized name (lowercase, runs of ``-_.`` replaced by ``-``).
     """
-    if isinstance(package_info, dict):
-        return package_info["name"]
-    else:
-        return package_info.name
-
-
-def get_package_version(package_info: Union[dict, _PackageInfo]) -> str:
-    """
-    Get package version for package info.
-
-    :param package_info: package info to get package version from.
-    :return: package version.
-    """
-    if isinstance(package_info, dict):
-        return package_info["version"]
-    else:
-        return package_info.version
+    return re.sub(r"[-_.]+", "-", name).lower()
 
 
 def get_packages_info(packages_names: List[str]) -> Dict[str, str]:
     """
     Get package name and package version of installed packages by names.
 
+    Uses the standard ``importlib.metadata`` API instead of pip internals,
+    which change between pip releases.
+
     :param packages_names: list of package names to check.
-    :return: mapping of package names to package versions.
+    :return: mapping of package names (as declared in package metadata)
+        to package versions, in the order they were requested.
+        Packages that are not installed are omitted.
     """
-    _initialize_master_working_set()
-    initial_pip_logger_level = pip_logger.level
-    pip_logger.setLevel(level=logging.CRITICAL)
-    data = {
-        get_package_name(package_info): get_package_version(package_info)
-        for package_info in search_packages_info(packages_names)
-    }
-    pip_logger.setLevel(level=initial_pip_logger_level)
+    # Packages may have just been installed or removed in this very process.
+    importlib.invalidate_caches()
+
+    requested = [canonicalize_name(name) for name in packages_names]
+    found = {}
+    for distribution in importlib.metadata.distributions():
+        name = distribution.metadata["Name"]
+        if not name:
+            continue
+        key = canonicalize_name(name)
+        # The first match wins, following sys.path order (same as imports).
+        if key in requested and key not in found:
+            found[key] = (name, distribution.version)
+
+    data = {}
+    for key in requested:
+        if key in found:
+            name, version = found[key]
+            data[name] = version
     return data
 
 

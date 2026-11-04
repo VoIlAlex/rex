@@ -172,3 +172,28 @@ class TestRemoveUninstalledPackagesFromRequirementsTxt:
         check_git_only_restriction_mock.assert_called_once_with()
         get_requirements_txt_path_mock.assert_called_once_with(try_create=False)
         parse_requirements_txt_mock.assert_not_called()
+
+    def test_remove_uninstalled_packages_name_normalization(
+        self,
+        parse_requirements_txt_mock: Mock,
+        get_requirements_txt_path_mock: Mock,
+        check_git_only_restriction_mock: Mock,
+        get_packages_info_mock: Mock,
+        parse_packages_names_mock: Mock,
+        temp_dir,
+    ):
+        # `pip uninstall pyyaml` must remove the `PyYAML==...` line.
+        requirements_txt_path_exp = os.path.join(os.getcwd(), "requirements.txt")
+        parse_packages_names_mock.return_value = ["pyyaml"]
+        get_packages_info_mock.return_value = {}
+        check_git_only_restriction_mock.return_value = True
+        get_requirements_txt_path_mock.return_value = (requirements_txt_path_exp, False)
+        parse_requirements_txt_mock.return_value = {
+            "appdata": "0.2.1",
+            "PyYAML": "6.0",
+        }
+
+        remove_uninstalled_packages_from_requirements_txt(["pyyaml"])
+
+        with open(requirements_txt_path_exp, "r") as f:
+            assert f.read() == "appdata==0.2.1\n"
